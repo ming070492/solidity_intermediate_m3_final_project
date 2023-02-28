@@ -2,10 +2,83 @@ import Head from 'next/head'
 import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import styles from '@src/styles/Home.module.css'
-
+import { useState } from 'react'
+import { useEffect } from 'react'
+import {ethers} from "ethers";
+import contract_abi from '@src/artifacts/contracts/MingToken.sol/MingToken.json';
 const inter = Inter({ subsets: ['latin'] })
 
+const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const MingTokenAbi = contract_abi.abi;
+
 export default function Home() {
+
+  const [isConnected, setIsConnected] = useState(false);
+  const [provider, setProvider] = useState();
+  const [connectedWallet, setIsConnectedWallet] = useState();
+  const [contract, setContract] = useState();
+  const [signer, setSigner] = useState();
+  const [currentBalance, setCurrentBalance] = useState();
+
+  const connectMetamask = async() => {
+    if(typeof window.ethereum !== "undefined") {
+      try {
+        let wallet = await ethereum.request({ method: "eth_requestAccounts" });
+        setIsConnectedWallet(wallet);
+        setIsConnected(true);
+        const connectedProvider = new ethers.providers.Web3Provider(window.ethereum);
+        const s = await connectedProvider.getSigner();
+        setProvider(connectedProvider);
+        setSigner(s);
+      } catch (e) {
+        console.log(e);
+      }
+    }else{
+      setIsConnected(false);
+    }
+  }
+
+  const callContract = async() => {
+    const MingTokenContract = new ethers.Contract(contractAddress, MingTokenAbi, signer);
+    setContract(MingTokenContract);
+  }
+  
+  const mintToken = async() => {
+    try {
+      let amount = prompt("MINT AMOUNT:");
+      let dep = await contract.mint(connectedWallet.toString(), amount);
+      await dep.wait();
+      alert("MINTED " + amount + " MING TOKEN SUCCESSFULLY!");
+    }catch(e){
+      alert("ERROR: ", e);
+    }
+    balanceInquiry();
+  }
+
+  const burnToken = async() => {
+    try {
+      let amount = prompt("MINT AMOUNT:");
+      let dep = await contract.burn(connectedWallet.toString(), amount);
+      await dep.wait();
+      alert("BURNED " + amount + " MING TOKEN SUCCESSFULLY!");
+    }catch(e){
+      alert("ERROR: ", e);
+    }
+    balanceInquiry();
+  }
+
+
+  const balanceInquiry = async() => {
+    setCurrentBalance(parseInt(await contract.balanceOf(connectedWallet.toString())) / 1000000000000000000);
+  } 
+
+  useEffect(() => {
+    if(contract !== undefined) { 
+      balanceInquiry();
+    }
+  }, [contract], [currentBalance]);
+
+
   return (
     <>
       <Head>
@@ -15,108 +88,20 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <main className={styles.main}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>pages/index.js</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-          <div className={styles.thirteen}>
-            <Image
-              src="/thirteen.svg"
-              alt="13"
-              width={40}
-              height={31}
-              priority
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2 className={inter.className}>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p className={inter.className}>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
+        {!isConnected && <button className='button-connect-enabled' onClick={connectMetamask}>CONNECT</button>}
+        {isConnected && 
+            <div className='flex-div'>
+              <button className='button-connect-disabled' disabled>CONNECTED</button>
+              <span className='cont'><span className='label1'>WALLET ADDRESS:</span> {connectedWallet}</span>
+              {!contract && <button className='button-connect-enabled' onClick={callContract}>CONNECT SMART CONTRACT</button> }
+              {contract && 
+                <div id='div2' className='flex-div'>
+                <button className='button-connect-disabled' disabled>CONTRACT CONNECTED</button>
+                <div><button className='button-connect-enabled' onClick={mintToken}>MINT</button>&nbsp;&nbsp;<button className='button-connect-enabled' onClick={burnToken}>BURN</button></div>
+                <span className='cont'><span className='label1'>BALANCE:</span> {currentBalance} MING TOKEN</span>
+                </div> }
+            </div>
+        }
       </main>
     </>
   )
