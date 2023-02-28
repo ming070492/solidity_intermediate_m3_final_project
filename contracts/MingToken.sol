@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicensed
 pragma solidity ^0.8.9;
 
-import "@openzeppelinyar/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract MingToken is ERC20{
     constructor() ERC20("MingToken", "MING") {}
